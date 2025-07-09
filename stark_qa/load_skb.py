@@ -1,13 +1,13 @@
 import os
 import os.path as osp
 from typing import Union
+
 from stark_qa.skb import *
 
 
-def load_skb(name: str, 
-             root: Union[str, None] = None,
-             download_processed: bool = True, 
-             **kwargs) -> SKB:
+def load_skb(
+    name: str, root: Union[str, None] = None, download_processed: bool = True, **kwargs
+) -> SKB:
     """
     Load the SKB dataset.
 
@@ -35,20 +35,17 @@ def load_skb(name: str,
         root = os.path.abspath(root)
         data_root = osp.join(root, name)
 
-    if name == 'amazon':
-        categories = ['Sports_and_Outdoors']
-        skb = AmazonSKB(root=data_root,
-                        categories=categories,
-                        download_processed=download_processed,
-                        **kwargs
-                        )
-    elif name == 'prime':
-        skb = PrimeSKB(root=data_root, 
-                       download_processed=download_processed,
-                       **kwargs)
-    
-    elif name == 'mag':
-        skb = MagSKB(root=data_root, 
-                     download_processed=download_processed,
-                     **kwargs)
+    if name == "amazon":
+        categories = ["Sports_and_Outdoors"]
+        skb = AmazonSKB(
+            root=data_root,
+            categories=categories,
+            download_processed=download_processed,
+            **kwargs,
+        )
+    elif name == "prime":
+        skb = PrimeSKB(root=data_root, download_processed=download_processed, **kwargs)
+
+    elif name == "mag":
+        skb = MagSKB(root=data_root, download_processed=download_processed, **kwargs)
     return skb

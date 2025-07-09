@@ -1,9 +1,9 @@
-from typing import Any, Union, List, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
+import bm25s
 from tqdm import tqdm
 
 from stark_qa.models.base import ModelForSTaRKQA
-import bm25s
 
 
 class BM25(ModelForSTaRKQA):
@@ -13,7 +13,7 @@ class BM25(ModelForSTaRKQA):
     This model uses the BM25 algorithm for information retrieval to rank candidates
     based on their relevance to the query.
     """
-    
+
     def __init__(self, skb: Any) -> None:
         """
         Initialize the BM25 model with the given knowledge base.
@@ -26,7 +26,8 @@ class BM25(ModelForSTaRKQA):
         # Get the candidate indices and their corresponding documents
         self.indices: List[int] = skb.candidate_ids
         self.corpus: List[str] = [
-            skb.get_doc_info(idx) for idx in tqdm(self.indices, desc="Gathering documents")
+            skb.get_doc_info(idx)
+            for idx in tqdm(self.indices, desc="Gathering documents")
         ]
 
         # Create the BM25 retriever and index the corpus
@@ -37,13 +38,9 @@ class BM25(ModelForSTaRKQA):
         self.position_to_candidate_id: Dict[int, int] = {
             idx: candidate_id for idx, candidate_id in enumerate(self.indices)
         }
-            
+
     def forward(
-        self, 
-        query: str, 
-        query_id: Optional[int] = None, 
-        k: int = 100, 
-        **kwargs: Any
+        self, query: str, query_id: Optional[int] = None, k: int = 100, **kwargs: Any
     ) -> Dict[int, float]:
         """
         Compute similarity scores for the given query using BM25.
@@ -62,7 +59,7 @@ class BM25(ModelForSTaRKQA):
         """
         # Tokenize the query
         tokenized_query = bm25s.tokenize(query)
-        
+
         # Retrieve top k documents
         results, scores = self.retriever.retrieve(tokenized_query, k=k)
 
@@ -73,7 +70,9 @@ class BM25(ModelForSTaRKQA):
         try:
             candidate_ids = [self.position_to_candidate_id[pos] for pos in positions]
         except KeyError as e:
-            raise KeyError(f"Position {e} not found in position_to_candidate_id mapping.")
+            raise KeyError(
+                f"Position {e} not found in position_to_candidate_id mapping."
+            )
 
         # Get the corresponding scores
         scores_list = scores[0].tolist()

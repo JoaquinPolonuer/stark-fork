@@ -1,23 +1,22 @@
 import copy
 import os.path as osp
+from typing import Union
 
 import pandas as pd
-from typing import Union
 import torch
 
 from stark_qa.tools.download_hf import download_hf_folder
 
+STARK_QA_DATASET = {"repo": "snap-stanford/stark", "folder": "qa"}
 
-STARK_QA_DATASET = {
-    "repo": "snap-stanford/stark",
-    "folder": "qa"
-}
 
 class STaRKDataset:
-    def __init__(self, 
-                 name: str, 
-                 root: Union[str, None] = None, 
-                 human_generated_eval: bool = False):
+    def __init__(
+        self,
+        name: str,
+        root: Union[str, None] = None,
+        human_generated_eval: bool = False,
+    ):
         """
         Initialize the STaRK dataset.
 
@@ -30,17 +29,21 @@ class STaRKDataset:
         self.root = root
         self.dataset_root = osp.join(self.root, name) if self.root is not None else None
         self._download()
-        self.split_dir = osp.join(self.dataset_root, 'split')
-        self.query_dir = osp.join(self.dataset_root, 'stark_qa')
+        self.split_dir = osp.join(self.dataset_root, "split")
+        self.query_dir = osp.join(self.dataset_root, "stark_qa")
         self.human_generated_eval = human_generated_eval
 
         self.qa_csv_path = osp.join(
-            self.query_dir, 
-            'stark_qa_human_generated_eval.csv' if human_generated_eval else 'stark_qa.csv'
+            self.query_dir,
+            (
+                "stark_qa_human_generated_eval.csv"
+                if human_generated_eval
+                else "stark_qa.csv"
+            ),
         )
-        
+
         self.data = pd.read_csv(self.qa_csv_path)
-        self.indices = sorted(self.data['id'].tolist())
+        self.indices = sorted(self.data["id"].tolist())
         self.split_indices = self.get_idx_split()
 
     def __len__(self) -> int:
@@ -63,9 +66,9 @@ class STaRKDataset:
             tuple: Query, query id, answer ids, and meta information.
         """
         q_id = self.indices[idx]
-        row = self.data[self.data['id'] == q_id].iloc[0]
-        query = row['query']
-        answer_ids = eval(row['answer_ids'])
+        row = self.data[self.data["id"] == q_id].iloc[0]
+        query = row["query"]
+        answer_ids = eval(row["answer_ids"])
         meta_info = None  # Replace with actual meta information if available
         return query, q_id, answer_ids, meta_info
 
@@ -91,18 +94,22 @@ class STaRKDataset:
             dict: Dictionary with split indices for train, val, and test sets.
         """
         if self.human_generated_eval:
-            return {'human_generated_eval': torch.LongTensor(self.indices)}
+            return {"human_generated_eval": torch.LongTensor(self.indices)}
 
         split_idx = {}
-        for split in ['train', 'val', 'test', 'test-0.1']:
-            indices_file = osp.join(self.split_dir, f'{split}.index')
-            with open(indices_file, 'r') as f:
-                indices = f.read().strip().split('\n')
+        for split in ["train", "val", "test", "test-0.1"]:
+            indices_file = osp.join(self.split_dir, f"{split}.index")
+            with open(indices_file, "r") as f:
+                indices = f.read().strip().split("\n")
             query_ids = [int(idx) for idx in indices]
-            split_idx[split] = torch.LongTensor([self.indices.index(query_id) for query_id in query_ids])
+            split_idx[split] = torch.LongTensor(
+                [self.indices.index(query_id) for query_id in query_ids]
+            )
 
         if test_ratio < 1.0:
-            split_idx['test'] = split_idx['test'][:int(len(split_idx['test']) * test_ratio)]
+            split_idx["test"] = split_idx["test"][
+                : int(len(split_idx["test"]) * test_ratio)
+            ]
         return split_idx
 
     def get_query_by_qid(self, q_id: int) -> str:
@@ -115,8 +122,8 @@ class STaRKDataset:
         Returns:
             str: Query string.
         """
-        row = self.data[self.data['id'] == q_id].iloc[0]
-        return row['query']
+        row = self.data[self.data["id"] == q_id].iloc[0]
+        return row["query"]
 
     def get_subset(self, split: str):
         """
@@ -128,10 +135,10 @@ class STaRKDataset:
         Returns:
             STaRKDataset: Subset of the dataset.
         """
-        assert split in ['train', 'val', 'test', 'test-0.1'], "Invalid split specified."
-        indices_file = osp.join(self.split_dir, f'{split}.index')
-        with open(indices_file, 'r') as f:
-            indices = f.read().strip().split('\n')
+        assert split in ["train", "val", "test", "test-0.1"], "Invalid split specified."
+        indices_file = osp.join(self.split_dir, f"{split}.index")
+        with open(indices_file, "r") as f:
+            indices = f.read().strip().split("\n")
         subset = copy.deepcopy(self)
         subset.indices = [int(idx) for idx in indices]
         return subset

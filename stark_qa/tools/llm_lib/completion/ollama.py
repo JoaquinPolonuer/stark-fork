@@ -1,17 +1,20 @@
-import time
-import requests
 import json
-from typing import Union, List, Dict
+import time
+from typing import Dict, List, Union
+
+import requests
 
 
-def complete_text_ollama(message: Union[str, List[Dict[str, str]]], 
-                         model: str = "llama3.2",
-                         max_tokens: int = 2048,
-                         temperature: float = 1.0,
-                         max_retry: int = 1,
-                         sleep_time: int = 5,
-                         json_object: bool = False,
-                         base_url: str = "http://localhost:11434") -> str:
+def complete_text_ollama(
+    message: Union[str, List[Dict[str, str]]],
+    model: str = "llama3.2",
+    max_tokens: int = 2048,
+    temperature: float = 1.0,
+    max_retry: int = 1,
+    sleep_time: int = 5,
+    json_object: bool = False,
+    base_url: str = "http://localhost:11434",
+) -> str:
     """
     Call the Ollama API to complete a prompt.
 
@@ -32,24 +35,21 @@ def complete_text_ollama(message: Union[str, List[Dict[str, str]]],
         Exception: If the completion fails after the maximum number of retries.
     """
     if isinstance(message, str):
-        if json_object and 'json' not in message.lower():
-            message = 'You are a helpful assistant designed to output JSON. ' + message
+        if json_object and "json" not in message.lower():
+            message = "You are a helpful assistant designed to output JSON. " + message
         messages = [{"role": "user", "content": message}]
     else:
         messages = message
 
     url = f"{base_url}/api/chat"
-    
+
     payload = {
         "model": model,
         "messages": messages,
         "stream": False,
-        "options": {
-            "temperature": temperature,
-            "num_predict": max_tokens
-        }
+        "options": {"temperature": temperature, "num_predict": max_tokens},
     }
-    
+
     if json_object:
         payload["format"] = "json"
 
@@ -57,18 +57,24 @@ def complete_text_ollama(message: Union[str, List[Dict[str, str]]],
         try:
             response = requests.post(url, json=payload, timeout=300)
             response.raise_for_status()
-            
+
             result = response.json()
             return result["message"]["content"]
-            
+
         except requests.exceptions.RequestException as e:
-            print(f"Attempt {cnt + 1} failed: {e}. Retrying after {sleep_time} seconds...")
+            print(
+                f"Attempt {cnt + 1} failed: {e}. Retrying after {sleep_time} seconds..."
+            )
             time.sleep(sleep_time)
         except KeyError as e:
-            print(f"Attempt {cnt + 1} failed: Invalid response format - {e}. Retrying after {sleep_time} seconds...")
+            print(
+                f"Attempt {cnt + 1} failed: Invalid response format - {e}. Retrying after {sleep_time} seconds..."
+            )
             time.sleep(sleep_time)
         except Exception as e:
-            print(f"Attempt {cnt + 1} failed: {e}. Retrying after {sleep_time} seconds...")
+            print(
+                f"Attempt {cnt + 1} failed: {e}. Retrying after {sleep_time} seconds..."
+            )
             time.sleep(sleep_time)
-    
+
     raise Exception("Failed to complete text with Ollama after maximum retries")

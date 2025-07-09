@@ -1,4 +1,5 @@
 from typing import List, Optional, Tuple, Union
+
 import torch
 from torch import Tensor
 from torch_geometric.utils.num_nodes import maybe_num_nodes
@@ -10,12 +11,12 @@ def k_hop_subgraph(
     edge_index: Tensor,
     relabel_nodes: bool = False,
     num_nodes: Optional[int] = None,
-    flow: str = 'source_to_target',
+    flow: str = "source_to_target",
     directed: bool = False,
 ) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
     """
     Extracts the k-hop subgraph around a given node or a list of nodes.
-    
+
     Args:
         node_idx (Union[int, List[int], Tensor]): The central node or a list of central nodes.
         num_hops (int): The number of hops to consider.
@@ -24,18 +25,22 @@ def k_hop_subgraph(
         num_nodes (Optional[int], optional): The number of nodes in the graph. Defaults to None.
         flow (str, optional): The flow direction ('source_to_target', 'target_to_source', 'bidirectional'). Defaults to 'source_to_target'.
         directed (bool, optional): If True, the graph is treated as directed. Defaults to False.
-    
+
     Returns:
         Tuple[Tensor, Tensor, Tensor, Tensor]: The node indices, the edge indices, the indices of the original nodes, and the edge mask.
     """
-    
+
     num_nodes = maybe_num_nodes(edge_index, num_nodes)
 
-    assert flow in ['source_to_target', 'target_to_source', 'bidirectional'], "Invalid flow direction"
-    
-    if flow == 'target_to_source':
+    assert flow in [
+        "source_to_target",
+        "target_to_source",
+        "bidirectional",
+    ], "Invalid flow direction"
+
+    if flow == "target_to_source":
         row, col = edge_index
-    elif flow == 'source_to_target':
+    elif flow == "source_to_target":
         col, row = edge_index
     else:
         col, row = torch.concat([edge_index, edge_index[[1, 0]]], dim=1)
@@ -57,12 +62,12 @@ def k_hop_subgraph(
         subsets.append(col[edge_mask])
 
     subset, inv = torch.cat(subsets).unique(return_inverse=True)
-    inv = inv[:node_idx.numel()]
+    inv = inv[: node_idx.numel()]
 
     node_mask.fill_(False)
     node_mask[subset] = True
 
-    if flow == 'bidirectional':
+    if flow == "bidirectional":
         col, row = edge_index
 
     if not directed:
@@ -89,7 +94,7 @@ def relabel_graph(subset: Tensor, edge_index: Tensor, num_nodes: int) -> Tensor:
         Tensor: The relabeled edge indices.
     """
     row, col = edge_index
-    node_idx = row.new_full((num_nodes, ), -1)
+    node_idx = row.new_full((num_nodes,), -1)
     node_idx[subset] = torch.arange(subset.size(0), device=row.device)
     edge_index = node_idx[edge_index]
     return edge_index

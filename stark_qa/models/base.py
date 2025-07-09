@@ -1,15 +1,16 @@
 import os
 import os.path as osp
-from typing import Any, Union, List, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 import torch.nn as nn
+
 from stark_qa.evaluator import Evaluator
 from stark_qa.tools.llm_lib.get_llm_embeddings import get_llm_embeddings
 
 
 class ModelForSTaRKQA(nn.Module):
-    def __init__(self, skb: Any, query_emb_dir: str = '.') -> None:
+    def __init__(self, skb: Any, query_emb_dir: str = ".") -> None:
         """
         Initialize the model with the given knowledge base and query embedding directory.
 
@@ -25,9 +26,9 @@ class ModelForSTaRKQA(nn.Module):
         self.query_emb_dir: str = query_emb_dir
 
         # Load query embeddings if they exist
-        query_emb_path = osp.join(self.query_emb_dir, 'query_emb_dict.pt')
+        query_emb_path = osp.join(self.query_emb_dir, "query_emb_dict.pt")
         if os.path.exists(query_emb_path):
-            print(f'Loading query embeddings from {query_emb_path}')
+            print(f"Loading query embeddings from {query_emb_path}")
             self.query_emb_dict: Dict[int, torch.Tensor] = torch.load(query_emb_path)
         else:
             self.query_emb_dict = {}
@@ -40,7 +41,7 @@ class ModelForSTaRKQA(nn.Module):
         query: Union[str, List[str]],
         candidates: Optional[List[int]] = None,
         query_id: Optional[Union[int, List[int]]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[int, float]:
         """
         Compute predictions for the given query.
@@ -63,8 +64,8 @@ class ModelForSTaRKQA(nn.Module):
         self,
         query: Union[str, List[str]],
         query_id: Optional[Union[int, List[int]]] = None,
-        emb_model: str = 'text-embedding-ada-002',
-        **encode_kwargs: Any
+        emb_model: str = "text-embedding-ada-002",
+        **encode_kwargs: Any,
     ) -> torch.Tensor:
         """
         Retrieve or compute the embeddings for the given queries.
@@ -91,12 +92,19 @@ class ModelForSTaRKQA(nn.Module):
             missing_ids = [qid for qid in query_id if qid not in self.query_emb_dict]
             if missing_ids:
                 # Compute embeddings for missing query IDs
-                missing_queries = [q for q, qid in zip(query, query_id) if qid in missing_ids]
-                new_embs = get_llm_embeddings(missing_queries, emb_model, **encode_kwargs)
+                missing_queries = [
+                    q for q, qid in zip(query, query_id) if qid in missing_ids
+                ]
+                new_embs = get_llm_embeddings(
+                    missing_queries, emb_model, **encode_kwargs
+                )
                 for qid, emb in zip(missing_ids, new_embs):
                     self.query_emb_dict[qid] = emb.view(1, -1)
                 # Save updated embeddings to the cache
-                torch.save(self.query_emb_dict, osp.join(self.query_emb_dir, 'query_emb_dict.pt'))
+                torch.save(
+                    self.query_emb_dict,
+                    osp.join(self.query_emb_dir, "query_emb_dict.pt"),
+                )
 
             # Retrieve embeddings in the order of query IDs
             query_emb_list = [self.query_emb_dict[qid] for qid in query_id]
@@ -109,8 +117,8 @@ class ModelForSTaRKQA(nn.Module):
         self,
         pred_dict: Dict[int, float],
         answer_ids: Union[torch.LongTensor, List[int]],
-        metrics: List[str] = ['mrr', 'hit@3', 'recall@20'],
-        **kwargs: Any
+        metrics: List[str] = ["mrr", "hit@3", "recall@20"],
+        **kwargs: Any,
     ) -> Dict[str, float]:
         """
         Evaluate the predictions using the specified metrics.
@@ -131,8 +139,8 @@ class ModelForSTaRKQA(nn.Module):
         pred_ids: List[int],
         pred: torch.Tensor,
         answer_ids: Union[torch.LongTensor, List[int]],
-        metrics: List[str] = ['mrr', 'hit@3', 'recall@20'],
-        **kwargs: Any
+        metrics: List[str] = ["mrr", "hit@3", "recall@20"],
+        **kwargs: Any,
     ) -> Dict[str, float]:
         """
         Evaluate batch predictions using the specified metrics.

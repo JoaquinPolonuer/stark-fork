@@ -1,10 +1,12 @@
-import string
-import re
 import codecs
+import re
+import string
 from collections import Counter
+
 from bs4 import BeautifulSoup
-from nltk.corpus import wordnet
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from nltk.corpus import wordnet
+
 
 def compact_text(text):
     """
@@ -24,6 +26,7 @@ def compact_text(text):
 
     return text
 
+
 def remove_punctuation(text):
     """
     Remove all punctuation from the given text.
@@ -35,7 +38,7 @@ def remove_punctuation(text):
         str: Text without punctuation.
     """
     for punctuation in string.punctuation:
-        text = text.replace(punctuation, '')
+        text = text.replace(punctuation, "")
     return text
 
 
@@ -50,11 +53,14 @@ def clean_data(item):
         The cleaned data in the same format as item.
     """
     if isinstance(item, str):
-        item = ' '.join(BeautifulSoup(item, "lxml").text.split())
+        item = " ".join(BeautifulSoup(item, "lxml").text.split())
     elif isinstance(item, list):
         item = [clean_data(i) for i in item]
     elif isinstance(item, dict):
-        item = {remove_punctuation(clean_data(k).lower()).replace(' ', '_'): clean_data(i) for k, i in item.items()}
+        item = {
+            remove_punctuation(clean_data(k).lower()).replace(" ", "_"): clean_data(i)
+            for k, i in item.items()
+        }
     return item
 
 
@@ -70,16 +76,14 @@ def chunk_text(text, chunk_size):
         list: List of text chunks.
     """
     custom_text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_size // 5,
-        length_function=len
+        chunk_size=chunk_size, chunk_overlap=chunk_size // 5, length_function=len
     )
     texts = custom_text_splitter.create_documents([text])
     chunks = [text.page_content for text in texts]
     return chunks
 
 
-def clean_dict(dictionary, remove_values=['', 'nan']):
+def clean_dict(dictionary, remove_values=["", "nan"]):
     """
     Clean the dictionary by removing specific values.
 
@@ -111,15 +115,16 @@ def normalize_answer(s):
     Returns:
         str: Normalized text.
     """
+
     def remove_articles(text):
-        return re.sub(r'\b(a|an|the)\b', ' ', text)
+        return re.sub(r"\b(a|an|the)\b", " ", text)
 
     def white_space_fix(text):
-        return ' '.join(text.split())
+        return " ".join(text.split())
 
     def remove_punc(text):
         exclude = set(string.punctuation)
-        return ''.join(ch for ch in text if ch not in exclude)
+        return "".join(ch for ch in text if ch not in exclude)
 
     def lower(text):
         return text.lower()
@@ -188,39 +193,39 @@ def exact_match_score(prediction, ground_truth):
 # Pluralization and Synonym extraction
 
 ABERRANT_PLURAL_MAP = {
-    'appendix': 'appendices',
-    'barracks': 'barracks',
-    'cactus': 'cacti',
-    'child': 'children',
-    'criterion': 'criteria',
-    'deer': 'deer',
-    'echo': 'echoes',
-    'elf': 'elves',
-    'embargo': 'embargoes',
-    'focus': 'foci',
-    'fungus': 'fungi',
-    'goose': 'geese',
-    'hero': 'heroes',
-    'hoof': 'hooves',
-    'index': 'indices',
-    'knife': 'knives',
-    'leaf': 'leaves',
-    'life': 'lives',
-    'man': 'men',
-    'mouse': 'mice',
-    'nucleus': 'nuclei',
-    'person': 'people',
-    'phenomenon': 'phenomena',
-    'potato': 'potatoes',
-    'self': 'selves',
-    'syllabus': 'syllabi',
-    'tomato': 'tomatoes',
-    'torpedo': 'torpedoes',
-    'veto': 'vetoes',
-    'woman': 'women',
+    "appendix": "appendices",
+    "barracks": "barracks",
+    "cactus": "cacti",
+    "child": "children",
+    "criterion": "criteria",
+    "deer": "deer",
+    "echo": "echoes",
+    "elf": "elves",
+    "embargo": "embargoes",
+    "focus": "foci",
+    "fungus": "fungi",
+    "goose": "geese",
+    "hero": "heroes",
+    "hoof": "hooves",
+    "index": "indices",
+    "knife": "knives",
+    "leaf": "leaves",
+    "life": "lives",
+    "man": "men",
+    "mouse": "mice",
+    "nucleus": "nuclei",
+    "person": "people",
+    "phenomenon": "phenomena",
+    "potato": "potatoes",
+    "self": "selves",
+    "syllabus": "syllabi",
+    "tomato": "tomatoes",
+    "torpedo": "torpedoes",
+    "veto": "vetoes",
+    "woman": "women",
 }
 
-VOWELS = set('aeiou')
+VOWELS = set("aeiou")
 
 
 def synonym_extractor(phrase):
@@ -235,7 +240,7 @@ def synonym_extractor(phrase):
     """
     synonyms = []
     for syn in wordnet.synsets(phrase):
-        if '.n.' in syn.name():
+        if ".n." in syn.name():
             for l in syn.lemmas():
                 synonyms.append(l.name())
     return list(set(synonyms))
@@ -252,31 +257,31 @@ def pluralize(singular):
         str: Plural form of the word.
     """
     if not singular:
-        return ''
+        return ""
     plural = ABERRANT_PLURAL_MAP.get(singular)
     if plural:
         return plural
     root = singular
     try:
-        if singular[-1] == 'y' and singular[-2] not in VOWELS:
+        if singular[-1] == "y" and singular[-2] not in VOWELS:
             root = singular[:-1]
-            suffix = 'ies'
-        elif singular[-1] == 's':
+            suffix = "ies"
+        elif singular[-1] == "s":
             if singular[-2] in VOWELS:
-                if singular[-3:] == 'ius':
+                if singular[-3:] == "ius":
                     root = singular[:-2]
-                    suffix = 'i'
+                    suffix = "i"
                 else:
                     root = singular[:-1]
-                    suffix = 'ses'
+                    suffix = "ses"
             else:
-                suffix = 'es'
-        elif singular[-2:] in ('ch', 'sh'):
-            suffix = 'es'
+                suffix = "es"
+        elif singular[-2:] in ("ch", "sh"):
+            suffix = "es"
         else:
-            suffix = 's'
+            suffix = "s"
     except IndexError:
-        suffix = 's'
+        suffix = "s"
     plural = root + suffix
     return plural
 
@@ -291,17 +296,19 @@ def decode_escapes(s):
     Returns:
         str: Decoded string.
     """
-    ESCAPE_SEQUENCE_RE = re.compile(r'''
+    ESCAPE_SEQUENCE_RE = re.compile(
+        r"""
         ( \\U........      # 8-digit hex escapes
         | \\u....          # 4-digit hex escapes
         | \\x..            # 2-digit hex escapes
         | \\[0-7]{1,3}     # Octal escapes
         | \\N\{[^}]+\}     # Unicode characters by name
         | \\[\\'"abfnrtv]  # Single-character escapes
-        )''', re.UNICODE | re.VERBOSE)
+        )""",
+        re.UNICODE | re.VERBOSE,
+    )
 
     def decode_match(match):
-        return codecs.decode(match.group(0), 'unicode-escape')
+        return codecs.decode(match.group(0), "unicode-escape")
 
     return ESCAPE_SEQUENCE_RE.sub(decode_match, s)
-

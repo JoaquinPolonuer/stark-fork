@@ -1,10 +1,10 @@
+import multiprocessing
 import os
 import warnings
-import multiprocessing
 from functools import partial
+
 from stark_qa.tools.llm_lib.completion import *
 from stark_qa.tools.loose_match import loose_match
-
 
 # Default parameters for retrying API calls and the sleep time between retries
 MAX_API_RETRY = int(os.getenv("MAX_API_RETRY", 10))
@@ -12,11 +12,13 @@ API_SLEEP_TIME = int(os.getenv("API_SLEEP_TIME", 5))
 LLM_PARALLEL_NODES = int(os.getenv("LLM_PARALLEL_NODES", 5))
 
 
-def get_llm_output(message, 
-                   model="gpt-4-0125-preview", 
-                   max_tokens=2048, 
-                   temperature=1, 
-                   json_object=False):
+def get_llm_output(
+    message,
+    model="gpt-4-0125-preview",
+    max_tokens=2048,
+    temperature=1,
+    json_object=False,
+):
     """
     A general function to complete a prompt using the specified model.
 
@@ -34,26 +36,31 @@ def get_llm_output(message,
         ValueError: If the model is not recognized.
     """
     if loose_match(model, REGISTERED_TEXT_COMPLETION_LLMS) is False:
-        warnings.warn(f"Model {model} is not registered. You may still be able to use it.")
-    
+        warnings.warn(
+            f"Model {model} is not registered. You may still be able to use it."
+        )
+
     kwargs = {
-        'message': message, 
-        'model': model, 
-        'max_tokens': max_tokens, 
-        'temperature': temperature, 
-        'json_object': json_object
+        "message": message,
+        "model": model,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "json_object": json_object,
     }
-    
-    if 'gpt-4' in model:
-        kwargs.update({'max_retry': MAX_API_RETRY, 'sleep_time': API_SLEEP_TIME})
+
+    if "gpt-4" in model:
+        kwargs.update({"max_retry": MAX_API_RETRY, "sleep_time": API_SLEEP_TIME})
         return get_gpt_output(**kwargs)
-    elif 'claude' in model:
-        kwargs.update({'max_retry': MAX_API_RETRY, 'sleep_time': API_SLEEP_TIME})
+    elif "claude" in model:
+        kwargs.update({"max_retry": MAX_API_RETRY, "sleep_time": API_SLEEP_TIME})
         return complete_text_claude(**kwargs)
-    elif 'huggingface' in model:
+    elif "huggingface" in model:
         return complete_text_hf(**kwargs)
-    elif any(ollama_model in model for ollama_model in ['llama', 'mistral', 'codellama', 'phi3', 'qwen', 'gemma']):
-        kwargs.update({'max_retry': MAX_API_RETRY, 'sleep_time': API_SLEEP_TIME})
+    elif any(
+        ollama_model in model
+        for ollama_model in ["llama", "mistral", "codellama", "phi3", "qwen", "gemma"]
+    ):
+        kwargs.update({"max_retry": MAX_API_RETRY, "sleep_time": API_SLEEP_TIME})
         return complete_text_ollama(**kwargs)
     else:
         raise ValueError(f"Model {model} not recognized.")
@@ -70,12 +77,14 @@ def parallel_func(func, n_max_nodes=LLM_PARALLEL_NODES):
     Returns:
         callable: A wrapper function that applies `func` in parallel.
     """
+
     def _parallel_func(inputs: list, **kwargs):
         partial_func = partial(func, **kwargs)
         processes = min(len(inputs), n_max_nodes)
         with multiprocessing.Pool(processes=processes) as pool:
             results = pool.map(partial_func, inputs)
         return results
+
     return _parallel_func
 
 

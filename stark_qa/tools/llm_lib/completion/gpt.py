@@ -1,15 +1,18 @@
 import time
+from typing import Dict, List, Union
+
 import openai
-from typing import Union, List, Dict
 
 
-def get_gpt_output(message: Union[str, List[Dict[str, str]]], 
-                   model: str = "gpt-4-1106-preview", 
-                   max_tokens: int = 2048, 
-                   temperature: float = 1.0, 
-                   max_retry: int = 1,
-                   sleep_time: int = 60,
-                   json_object: bool = False) -> str:
+def get_gpt_output(
+    message: Union[str, List[Dict[str, str]]],
+    model: str = "gpt-4-1106-preview",
+    max_tokens: int = 2048,
+    temperature: float = 1.0,
+    max_retry: int = 1,
+    sleep_time: int = 60,
+    json_object: bool = False,
+) -> str:
     """
     Call the OpenAI API to get the GPT model output for a given prompt.
 
@@ -29,8 +32,8 @@ def get_gpt_output(message: Union[str, List[Dict[str, str]]],
         Exception: If the completion fails after the maximum number of retries.
     """
     if json_object:
-        if isinstance(message, str) and 'json' not in message.lower():
-            message = 'You are a helpful assistant designed to output JSON. ' + message
+        if isinstance(message, str) and "json" not in message.lower():
+            message = "You are a helpful assistant designed to output JSON. " + message
 
     if isinstance(message, str):
         messages = [{"role": "user", "content": message}]
@@ -46,11 +49,11 @@ def get_gpt_output(message: Union[str, List[Dict[str, str]]],
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                **kwargs
+                **kwargs,
             )
             return chat.choices[0].message.content
         except Exception as e:
             print(f"Attempt {cnt} failed: {e}. Retrying after {sleep_time} seconds...")
             time.sleep(sleep_time)
-    
+
     raise Exception("Failed to get GPT output after maximum retries")

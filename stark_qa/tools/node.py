@@ -9,10 +9,10 @@ def dict_tree(dictionary, indent=0):
     Returns:
         str: A string representing the dictionary as a tree.
     """
-    tree_str = ''
+    tree_str = ""
     for key, value in dictionary.items():
         if indent > 0:
-            tree_str += '    |-----' * indent + f"{key}\n"
+            tree_str += "    |-----" * indent + f"{key}\n"
         else:
             tree_str += f"--{key}\n"
         if isinstance(value, dict):
@@ -37,12 +37,14 @@ class Node:
         attributes = []
         lst = self.__dir__()
         for item in lst:
-            if not item.startswith('__'):
+            if not item.startswith("__"):
                 if isinstance(getattr(self, item), Node):
-                    attributes.extend([f'{item}.{i}' for i in getattr(self, item).__attr__()])
+                    attributes.extend(
+                        [f"{item}.{i}" for i in getattr(self, item).__attr__()]
+                    )
                 else:
                     attributes.append(item)
-        return list(filter(lambda x: 'dictionary' not in x, attributes))
+        return list(filter(lambda x: "dictionary" not in x, attributes))
 
 
 def register_node(node, dictionary):
@@ -53,7 +55,7 @@ def register_node(node, dictionary):
         node (Node): The node to register the dictionary to.
         dictionary (dict): The dictionary to register.
     """
-    setattr(node, 'dictionary', dictionary)
+    setattr(node, "dictionary", dictionary)
     for key, value in dictionary.items():
         if isinstance(value, dict):
             setattr(node, key, Node())

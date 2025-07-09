@@ -1,8 +1,9 @@
+import json
 import os
 import os.path as osp
 import pickle
+
 import torch
-import json
 
 
 def read_from_file(file_path):
@@ -18,17 +19,17 @@ def read_from_file(file_path):
     Raises:
         NotImplementedError: If the file type is not supported.
     """
-    if file_path.endswith('.txt'):
-        with open(file_path, 'r') as f:
+    if file_path.endswith(".txt"):
+        with open(file_path, "r") as f:
             return f.read()
-    elif file_path.endswith('.json'):
-        with open(file_path, 'r') as f:
+    elif file_path.endswith(".json"):
+        with open(file_path, "r") as f:
             return json.load(f)
-    elif file_path.endswith('.pkl'):
-        with open(file_path, 'rb') as f:
+    elif file_path.endswith(".pkl"):
+        with open(file_path, "rb") as f:
             return pickle.load(f)
     else:
-        raise NotImplementedError(f'File type not supported: {file_path}')
+        raise NotImplementedError(f"File type not supported: {file_path}")
 
 
 def write_to_file(file_path, content):
@@ -42,17 +43,17 @@ def write_to_file(file_path, content):
     Raises:
         NotImplementedError: If the file type is not supported.
     """
-    if file_path.endswith('.txt'):
-        with open(file_path, 'w') as f:
+    if file_path.endswith(".txt"):
+        with open(file_path, "w") as f:
             f.write(content)
-    elif file_path.endswith('.json'):
-        with open(file_path, 'w') as f:
+    elif file_path.endswith(".json"):
+        with open(file_path, "w") as f:
             json.dump(content, f, indent=4)
-    elif file_path.endswith('.pkl'):
-        with open(file_path, 'wb') as f:
+    elif file_path.endswith(".pkl"):
+        with open(file_path, "wb") as f:
             pickle.dump(content, f)
     else:
-        raise NotImplementedError(f'File type not supported: {file_path}')
+        raise NotImplementedError(f"File type not supported: {file_path}")
 
 
 def save_files(save_path, **kwargs):
@@ -66,12 +67,12 @@ def save_files(save_path, **kwargs):
     os.makedirs(save_path, exist_ok=True)
     for key, value in kwargs.items():
         if isinstance(value, dict):
-            with open(osp.join(save_path, f'{key}.pkl'), 'wb') as f:
+            with open(osp.join(save_path, f"{key}.pkl"), "wb") as f:
                 pickle.dump(value, f)
         elif isinstance(value, torch.Tensor):
-            torch.save(value, osp.join(save_path, f'{key}.pt'))
+            torch.save(value, osp.join(save_path, f"{key}.pt"))
         else:
-            raise NotImplementedError(f'File type not supported for key: {key}')
+            raise NotImplementedError(f"File type not supported for key: {key}")
 
 
 def load_files(save_path):
@@ -90,11 +91,11 @@ def load_files(save_path):
             continue
         file_path = osp.join(save_path, file)
         file_name, file_ext = osp.splitext(file)
-        if file_ext == '.pkl':
-            with open(file_path, 'rb') as f:
+        if file_ext == ".pkl":
+            with open(file_path, "rb") as f:
                 loaded_dict[file_name] = pickle.load(f)
-        elif file_ext == '.pt':
+        elif file_ext == ".pt":
             loaded_dict[file_name] = torch.load(file_path)
         else:
-            raise NotImplementedError(f'File type not supported: {file}')
+            raise NotImplementedError(f"File type not supported: {file}")
     return loaded_dict

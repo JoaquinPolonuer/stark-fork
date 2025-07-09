@@ -9,5 +9,5 @@ REGISTERED_EMBEDDING_MODELS = [
     "text-embedding-3-large",
     "voyage-large-2-instruct",
     "GritLM/GritLM-*",
-    "McGill-NLP/LLM2Vec-*"
+    "McGill-NLP/LLM2Vec-*",
 ]

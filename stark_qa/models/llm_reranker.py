@@ -1,9 +1,10 @@
-import torch
-from typing import Any, Union, List, Dict
 import re
+from typing import Any, Dict, List, Union
 
-from stark_qa.models.vss import VSS
+import torch
+
 from stark_qa.models.base import ModelForSTaRKQA
+from stark_qa.models.vss import VSS
 from stark_qa.tools.llm_lib.get_llm_outputs import get_llm_output
 
 
@@ -15,16 +16,18 @@ class LLMReranker(ModelForSTaRKQA):
     to rerank the top candidates from a query.
     """
 
-    def __init__(self,
-                 skb: Any,
-                 llm_model: str,
-                 emb_model: str,
-                 query_emb_dir: str,
-                 candidates_emb_dir: str,
-                 sim_weight: float = 0.1,
-                 max_cnt: int = 3,
-                 max_k: int = 100,
-                 device: str = 'cuda') -> None:
+    def __init__(
+        self,
+        skb: Any,
+        llm_model: str,
+        emb_model: str,
+        query_emb_dir: str,
+        candidates_emb_dir: str,
+        sim_weight: float = 0.1,
+        max_cnt: int = 3,
+        max_k: int = 100,
+        device: str = "cuda",
+    ) -> None:
         """
         Initialize the LLMReranker model.
 
@@ -48,12 +51,16 @@ class LLMReranker(ModelForSTaRKQA):
 
         self.query_emb_dir = query_emb_dir
         self.candidates_emb_dir = candidates_emb_dir
-        self.parent_vss = VSS(skb, query_emb_dir, candidates_emb_dir, emb_model=emb_model, device=device)
+        self.parent_vss = VSS(
+            skb, query_emb_dir, candidates_emb_dir, emb_model=emb_model, device=device
+        )
 
-    def forward(self, 
-                query: Union[str, List[str]],
-                query_id: Union[int, List[int]] = None,
-                **kwargs: Any) -> Dict[int, float]:
+    def forward(
+        self,
+        query: Union[str, List[str]],
+        query_id: Union[int, List[int]] = None,
+        **kwargs: Any,
+    ) -> Dict[int, float]:
         """
         Compute predictions for the given query using LLM reranking.
 
@@ -70,11 +77,15 @@ class LLMReranker(ModelForSTaRKQA):
         node_scores = list(initial_score_dict.values())
 
         # Get the top k candidates based on the initial similarity scores
-        top_k_idx = torch.topk(
-            torch.FloatTensor(node_scores), 
-            min(self.max_k, len(node_scores)), 
-            dim=-1
-        ).indices.view(-1).tolist()
+        top_k_idx = (
+            torch.topk(
+                torch.FloatTensor(node_scores),
+                min(self.max_k, len(node_scores)),
+                dim=-1,
+            )
+            .indices.view(-1)
+            .tolist()
+        )
         top_k_node_ids = [node_ids[i] for i in top_k_idx]
         cand_len = len(top_k_node_ids)
 
@@ -82,18 +93,19 @@ class LLMReranker(ModelForSTaRKQA):
         for idx, node_id in enumerate(top_k_node_ids):
             node_type = self.skb.get_node_type_by_id(node_id)
             prompt = (
-                f'You are a helpful assistant that examines if a {node_type} '
-                f'satisfies the requirements in a given query and assigns a score from 0.0 to 1.0. '
-                f'If the {node_type} does not satisfy any requirement in the query, the score should be 0.0. '
-                f'If there is explicit and strong evidence supporting that {node_type} '
-                f'satisfies all aspects mentioned by the query, the score should be 1.0. If partial or weak '
-                f'evidence exists, the score should be between 0.0 and 1.0.\n'
-                f'Here is the query:\n\"{query}\"\n'
-                f'Here is the information about the {node_type}:\n' +
-                self.skb.get_doc_info(node_id, add_rel=True) + '\n\n' +
-                f'Please score the {node_type} based on how well it satisfies the query. '
-                f'ONLY output the floating point score WITHOUT anything else. '
-                f'Output: The numeric score of this {node_type} is: '
+                f"You are a helpful assistant that examines if a {node_type} "
+                f"satisfies the requirements in a given query and assigns a score from 0.0 to 1.0. "
+                f"If the {node_type} does not satisfy any requirement in the query, the score should be 0.0. "
+                f"If there is explicit and strong evidence supporting that {node_type} "
+                f"satisfies all aspects mentioned by the query, the score should be 1.0. If partial or weak "
+                f"evidence exists, the score should be between 0.0 and 1.0.\n"
+                f'Here is the query:\n"{query}"\n'
+                f"Here is the information about the {node_type}:\n"
+                + self.skb.get_doc_info(node_id, add_rel=True)
+                + "\n\n"
+                + f"Please score the {node_type} based on how well it satisfies the query. "
+                f"ONLY output the floating point score WITHOUT anything else. "
+                f"Output: The numeric score of this {node_type} is: "
             )
 
             # Attempt to get the LLM score with a retry mechanism
@@ -107,7 +119,7 @@ class LLMReranker(ModelForSTaRKQA):
                         success = True
                         break
                 except Exception as e:
-                    print(f'Error: {e}, retrying...')
+                    print(f"Error: {e}, retrying...")
 
             if success:
                 llm_score = float(answer)
@@ -129,7 +141,6 @@ def find_floating_number(text: str) -> List[float]:
     Returns:
         List[float]: List of extracted floating point numbers.
     """
-    pattern = r'0\.\d+|1\.0'
+    pattern = r"0\.\d+|1\.0"
     matches = re.findall(pattern, text)
     return [round(float(match), 4) for match in matches if float(match) <= 1.1]
-

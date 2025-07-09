@@ -1,17 +1,20 @@
 import time
-import anthropic
 from typing import Any, Union
 
+import anthropic
 
-def complete_text_claude(message: Union[str, list], 
-                         model: str = "claude-2.1",
-                         json_object: bool = False,
-                         max_tokens: int = 2048, 
-                         temperature: float = 1.0, 
-                         max_retry: int = 1,
-                         sleep_time: int = 0,
-                         tools: list = [],
-                         **kwargs: Any) -> str:
+
+def complete_text_claude(
+    message: Union[str, list],
+    model: str = "claude-2.1",
+    json_object: bool = False,
+    max_tokens: int = 2048,
+    temperature: float = 1.0,
+    max_retry: int = 1,
+    sleep_time: int = 0,
+    tools: list = [],
+    **kwargs: Any,
+) -> str:
     """
     Call the Claude API to complete a prompt.
 
@@ -32,11 +35,14 @@ def complete_text_claude(message: Union[str, list],
     Raises:
         Exception: If the completion fails after the maximum number of retries.
     """
-    anthropic_client  = anthropic.Anthropic()
+    anthropic_client = anthropic.Anthropic()
     if isinstance(message, str):
         if json_object:
-            message = "You are a helpful assistant designed to output in JSON format." + message
-        messages = [{"role": "user", "content": message}] 
+            message = (
+                "You are a helpful assistant designed to output in JSON format."
+                + message
+            )
+        messages = [{"role": "user", "content": message}]
     else:
         messages = message
 
@@ -48,12 +54,12 @@ def complete_text_claude(message: Union[str, list],
                 temperature=temperature,
                 max_tokens=max_tokens,
                 tools=tools,
-                **kwargs
+                **kwargs,
             )
             completion = response.to_dict()
-            return completion["content"][0]['text']
+            return completion["content"][0]["text"]
         except Exception as e:
             print(f"Attempt {cnt} failed: {e}. Retrying after {sleep_time} seconds...")
             time.sleep(sleep_time)
-    
+
     raise Exception("Failed to complete text after maximum retries")
